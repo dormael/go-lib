@@ -1,0 +1,10 @@
+module github.com/dormael/go-lib
+
+go 1.15
+
+require (
+	github.com/danieljoos/wincred v1.1.0 // indirect
+	github.com/docker/docker-credential-helpers v0.6.3
+	github.com/go-rod/rod v0.86.2
+	github.com/manifoldco/promptui v0.8.0
+)
