@@ -15,6 +15,8 @@ type Credential struct {
 	PasswordInputSelector string
 	LoginURL              string
 
+	LoginSuccessClickSelector string
+
 	LoginSuccessSelector string
 	ID                   string
 

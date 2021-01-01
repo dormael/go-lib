@@ -75,6 +75,20 @@ func (l *Login) Submit() error {
 
 	pt.WaitLoadAndIdle()
 
+	if c.LoginSuccessClickSelector != "" {
+		for i := 0; i < 100; i++ {
+			if false == pt.Has(c.LoginSuccessClickSelector) {
+				time.Sleep(time.Millisecond * 100)
+				continue
+			}
+
+			pt.El(c.LoginSuccessClickSelector).MustClick()
+			break
+		}
+
+		pt.WaitLoadAndIdle()
+	}
+
 	for i := 0; i < 100; i++ {
 		currentPageURL := pt.URL()
 		if loginPageURL == currentPageURL {
