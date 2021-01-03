@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/cdp"
-	"github.com/go-rod/rod/lib/proto"
 )
 
 type Credential struct {
@@ -25,14 +24,14 @@ type Credential struct {
 	EnvPassword string
 }
 
-type StoreTemplate struct {
+type BrowserTemplate struct {
 	*rod.Browser
 }
 
-func (s *StoreTemplate) Login(c Credential) (*PageTemplate, error) {
+func (b *BrowserTemplate) Login(c Credential) (*PageTemplate, error) {
 	var pt *PageTemplate
 
-	page := s.MustPage(c.LoginGateURL)
+	page := b.MustPage(c.LoginGateURL)
 	if err := page.WaitLoad(); err != nil {
 		if false == cdp.ErrCtxDestroyed.Is(err) {
 			panic(err)
@@ -40,18 +39,16 @@ func (s *StoreTemplate) Login(c Credential) (*PageTemplate, error) {
 		log.Println(err.Error(), "occurred occasionally but has no problem")
 	}
 
-	pt = &PageTemplate{p: page}
+	pt = &PageTemplate{P: page}
+	pt.MaximizeToWindowBounds()
 
-	bounds := pt.p.MustGetWindow()
-	pt.p.SetViewport(&proto.EmulationSetDeviceMetricsOverride{Width: bounds.Width, Height: bounds.Height})
-
-	pages, err := s.Browser.Pages()
+	pages, err := b.Browser.Pages()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, p := range pages {
-		if p.FrameID == pt.p.FrameID {
+		if p.FrameID == pt.P.FrameID {
 			continue
 		}
 		p.MustClose()
@@ -81,6 +78,6 @@ func (s *StoreTemplate) Login(c Credential) (*PageTemplate, error) {
 	return pt, nil
 }
 
-func NewStoreTemplate(b *rod.Browser) *StoreTemplate {
-	return &StoreTemplate{Browser: b}
+func NewBrowserTemplate(b *rod.Browser) *BrowserTemplate {
+	return &BrowserTemplate{Browser: b}
 }

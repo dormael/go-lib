@@ -38,4 +38,14 @@ func (e ElementTemplate) ElE(selector string) (*rod.Element, error) {
 	return e.Element.Element(selector)
 }
 
+func (e ElementTemplate) ElementAttribute(selector string, name string) *string {
+	return e.El(selector).MustAttribute(name)
+}
+
+func (e ElementTemplate) Height() float64 {
+	quad := e.MustShape().Quads[0]
+
+	return quad[7] - quad[1]
+}
+
 type ElementsTemplate []*ElementTemplate

@@ -51,7 +51,7 @@ func (l *Login) Submit() error {
 					continue
 				}
 
-				loginPt = &PageTemplate{p: iPage}
+				loginPt = &PageTemplate{P: iPage}
 				if true == loginPt.Has(c.LoginInputSelector) {
 					break
 				}
