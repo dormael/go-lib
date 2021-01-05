@@ -105,7 +105,7 @@ func (l *Login) Submit() error {
 	currentPageURL := pt.URL()
 
 	if loginPageURL == currentPageURL {
-		screenshotPath := os.Getenv("PATH_SCREEN_SHOT")
+		screenshotPath := os.Getenv("PATH_SCREENSHOT")
 		screenshotLoginFailed := os.Getenv("SCREENSHOT_LOGIN_FAILED")
 		if screenshotLoginFailed == "1" && screenshotPath != "" {
 			if _, err := os.Stat(screenshotPath); err != nil {
