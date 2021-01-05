@@ -3,7 +3,9 @@ package rodtemplate
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path"
 	"time"
 
 	"github.com/go-rod/rod/lib/input"
@@ -103,6 +105,24 @@ func (l *Login) Submit() error {
 	currentPageURL := pt.URL()
 
 	if loginPageURL == currentPageURL {
+		screenshotPath := os.Getenv("PATH_SCREEN_SHOT")
+		screenshotLoginFailed := os.Getenv("SCREENSHOT_LOGIN_FAILED")
+		if screenshotLoginFailed == "1" && screenshotPath != "" {
+			if _, err := os.Stat(screenshotPath); err != nil {
+				if true == os.IsNotExist(err) {
+					if err = os.MkdirAll(screenshotPath, 0755); err != nil {
+						log.Println(err)
+						return errors.New("failed to login")
+					}
+				} else {
+					log.Println(err)
+					return errors.New("failed to login")
+				}
+			}
+
+			screenshotFile := fmt.Sprintf("loginfailed.%s.png", time.Now().Format("20060102150405"))
+			pt.ScreenShot(pt.El("html"), path.Join(screenshotPath, screenshotFile), 0)
+		}
 		return errors.New("failed to login")
 	}
 
