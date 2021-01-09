@@ -22,6 +22,8 @@ type Credential struct {
 	Password    string
 	EnvID       string
 	EnvPassword string
+
+	CaptchaHandler func(pt *PageTemplate) error
 }
 
 type BrowserTemplate struct {

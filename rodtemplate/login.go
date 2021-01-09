@@ -71,6 +71,13 @@ func (l *Login) Submit() error {
 		return errors.New("failed to find login input selector " + c.LoginInputSelector)
 	}
 
+	if c.CaptchaHandler != nil {
+		errCaptcha := c.CaptchaHandler(loginPt)
+		if errCaptcha != nil {
+			return errCaptcha
+		}
+	}
+
 	loginPt.Input(c.LoginInputSelector, c.ID)
 	loginPt.Input(c.PasswordInputSelector, c.Password)
 	loginPt.PressKey(input.Enter)

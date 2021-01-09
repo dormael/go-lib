@@ -205,7 +205,39 @@ func (p *PageTemplate) ScreenShot(el *ElementTemplate, dumpPath string, yDelta f
 		Clip: &proto.PageViewport{
 			X:      0,
 			Y:      quad[1] + yDelta,
-			Width: float64(bounds.Width),
+			Width:  float64(bounds.Width),
+			Height: quad[7] - quad[1],
+			Scale:  1,
+		},
+	}
+
+	byteArr, errScreenShot := p.P.Screenshot(false, req)
+	if errScreenShot != nil {
+		panic(errScreenShot)
+	}
+
+	errWrite := ioutil.WriteFile(dumpPath, byteArr, 0644)
+	if errWrite != nil {
+		panic(errWrite)
+	}
+
+	return byteArr
+}
+
+func (e ElementTemplate) ScreenShotElement(p *PageTemplate, dumpPath string, yDelta float64) []byte {
+	err := e.ScrollIntoView()
+	if err != nil {
+		panic(err)
+	}
+
+	quad := e.MustShape().Quads[0]
+
+	req := &proto.PageCaptureScreenshot{
+		Format: proto.PageCaptureScreenshotFormatPng,
+		Clip: &proto.PageViewport{
+			X:      quad[0],
+			Y:      quad[1] + yDelta,
+			Width:  quad[2] - quad[0],
 			Height: quad[7] - quad[1],
 			Scale:  1,
 		},
