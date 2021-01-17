@@ -131,7 +131,7 @@ func (p *PageTemplate) Els(selector string) ElementsTemplate {
 }
 
 func (p *PageTemplate) Reload() {
-	p.P.Reload()
+	p.P.MustReload()
 }
 
 func (p *PageTemplate) FrameID() proto.PageFrameID {
@@ -184,7 +184,11 @@ func (p *PageTemplate) Event() <-chan *rod.Message {
 
 func (p *PageTemplate) MaximizeToWindowBounds() {
 	bounds := p.P.MustGetWindow()
-	p.P.SetViewport(&proto.EmulationSetDeviceMetricsOverride{Width: bounds.Width, Height: bounds.Height})
+	p.SetViewport(bounds.Width, bounds.Height)
+}
+
+func (p *PageTemplate) SetViewport(width, height int) {
+	p.P.MustSetViewport(width, height, 0, false)
 }
 
 func (p *PageTemplate) Dump(dumpPath string) []byte {
