@@ -12,6 +12,12 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 )
 
+type ScreenShotOption struct {
+	Format  proto.PageCaptureScreenshotFormat
+	Quality int
+	YDelta  float64
+}
+
 type PageTemplate struct {
 	P *rod.Page
 }
@@ -191,11 +197,55 @@ func (p *PageTemplate) SetViewport(width, height int) {
 	p.P.MustSetViewport(width, height, 0, false)
 }
 
-func (p *PageTemplate) Dump(dumpPath string) []byte {
-	return p.P.MustScreenshotFullPage(dumpPath)
+func (p *PageTemplate) ScreenShotFull(dumpPath string) []byte {
+	opt := ScreenShotOption{
+		Format:  proto.PageCaptureScreenshotFormatJpeg,
+		Quality: 95,
+	}
+
+	return p.ScreenShotFullWithOption(dumpPath, opt)
+}
+
+func (p *PageTemplate) ScreenShotFullWithOption(dumpPath string, opt ScreenShotOption) []byte {
+	metrics, err := proto.PageGetLayoutMetrics{}.Call(p.P)
+	if err != nil {
+		panic(err)
+	}
+
+	oldView := proto.EmulationSetDeviceMetricsOverride{}
+	set := p.P.LoadState(&oldView)
+	view := oldView
+	view.Width = int(metrics.ContentSize.Width)
+	view.Height = int(metrics.ContentSize.Height)
+
+	err = p.P.SetViewport(&view)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() { // try to recover the viewport
+		if !set {
+			_ = proto.EmulationClearDeviceMetricsOverride{}.Call(p.P)
+			return
+		}
+
+		_ = p.P.SetViewport(&oldView)
+	}()
+
+	return p.ScreenShotWithOption(p.El("html"), dumpPath, opt)
 }
 
 func (p *PageTemplate) ScreenShot(el *ElementTemplate, dumpPath string, yDelta float64) []byte {
+	opt := ScreenShotOption{
+		Format:  proto.PageCaptureScreenshotFormatJpeg,
+		Quality: 95,
+		YDelta:  yDelta,
+	}
+
+	return p.ScreenShotWithOption(el, dumpPath, opt)
+}
+
+func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string, opt ScreenShotOption) []byte {
 	err := el.ScrollIntoView()
 	if err != nil {
 		panic(err)
@@ -205,10 +255,11 @@ func (p *PageTemplate) ScreenShot(el *ElementTemplate, dumpPath string, yDelta f
 	quad := el.MustShape().Quads[0]
 
 	req := &proto.PageCaptureScreenshot{
-		Format: proto.PageCaptureScreenshotFormatPng,
+		Format:  opt.Format,
+		Quality: opt.Quality,
 		Clip: &proto.PageViewport{
 			X:      0,
-			Y:      quad[1] + yDelta,
+			Y:      quad[1] + opt.YDelta,
 			Width:  float64(bounds.Width),
 			Height: quad[7] - quad[1],
 			Scale:  1,
@@ -228,38 +279,7 @@ func (p *PageTemplate) ScreenShot(el *ElementTemplate, dumpPath string, yDelta f
 	return byteArr
 }
 
-func (e ElementTemplate) ScreenShotElement(p *PageTemplate, dumpPath string, yDelta float64) []byte {
-	err := e.ScrollIntoView()
-	if err != nil {
-		panic(err)
-	}
-
-	quad := e.MustShape().Quads[0]
-
-	req := &proto.PageCaptureScreenshot{
-		Format: proto.PageCaptureScreenshotFormatPng,
-		Clip: &proto.PageViewport{
-			X:      quad[0],
-			Y:      quad[1] + yDelta,
-			Width:  quad[2] - quad[0],
-			Height: quad[7] - quad[1],
-			Scale:  1,
-		},
-	}
-
-	byteArr, errScreenShot := p.P.Screenshot(false, req)
-	if errScreenShot != nil {
-		panic(errScreenShot)
-	}
-
-	errWrite := ioutil.WriteFile(dumpPath, byteArr, 0644)
-	if errWrite != nil {
-		panic(errWrite)
-	}
-
-	return byteArr
-}
-
+//NewPageTemplate
 func NewPageTemplate(p *rod.Page) *PageTemplate {
 	return &PageTemplate{P: p}
 }
