@@ -13,9 +13,12 @@ import (
 )
 
 type ScreenShotOption struct {
-	Format  proto.PageCaptureScreenshotFormat
-	Quality int
-	YDelta  float64
+	Format      proto.PageCaptureScreenshotFormat
+	Quality     int
+	XDelta      float64
+	YDelta      float64
+	WidthDelta  float64
+	HeightDelta float64
 }
 
 type PageTemplate struct {
@@ -253,14 +256,14 @@ func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string
 
 	quad := el.MustShape().Quads[0]
 
-	width := quad[2] - quad[0]
-	height := quad[7] - quad[1]
+	width := quad[2] - quad[0] + opt.WidthDelta
+	height := quad[7] - quad[1] + opt.HeightDelta
 
 	req := &proto.PageCaptureScreenshot{
 		Format:  opt.Format,
 		Quality: opt.Quality,
 		Clip: &proto.PageViewport{
-			X:      quad[0],
+			X:      quad[0] + opt.XDelta,
 			Y:      quad[1] + opt.YDelta,
 			Width:  width,
 			Height: height,
