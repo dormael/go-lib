@@ -251,8 +251,10 @@ func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string
 		panic(err)
 	}
 
-	bounds := p.P.MustGetWindow()
 	quad := el.MustShape().Quads[0]
+
+	width := quad[2] - quad[0]
+	height := quad[7] - quad[1]
 
 	req := &proto.PageCaptureScreenshot{
 		Format:  opt.Format,
@@ -260,8 +262,8 @@ func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string
 		Clip: &proto.PageViewport{
 			X:      0,
 			Y:      quad[1] + opt.YDelta,
-			Width:  float64(bounds.Width),
-			Height: quad[7] - quad[1],
+			Width:  width,
+			Height: height,
 			Scale:  1,
 		},
 	}
