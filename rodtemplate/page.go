@@ -260,7 +260,7 @@ func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string
 		Format:  opt.Format,
 		Quality: opt.Quality,
 		Clip: &proto.PageViewport{
-			X:      0,
+			X:      quad[0],
 			Y:      quad[1] + opt.YDelta,
 			Width:  width,
 			Height: height,
