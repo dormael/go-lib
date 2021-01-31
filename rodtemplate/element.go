@@ -1,6 +1,10 @@
 package rodtemplate
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/go-rod/rod"
 )
 
@@ -46,6 +50,25 @@ func (e ElementTemplate) Height() float64 {
 	quad := e.MustShape().Quads[0]
 
 	return quad[7] - quad[1]
+}
+
+func (e ElementTemplate) SelectOrPanic(selector string) *ElementTemplate {
+	if false == e.Has(selector) {
+		panic(fmt.Errorf("element is missing %s sub element", selector))
+	}
+
+	return e.El(selector)
+}
+
+func (e ElementTemplate) MustTextAsUInt64() uint64 {
+	text := strings.TrimSpace(e.MustText())
+	text = strings.ReplaceAll(text, ",", "")
+	val, err := strconv.ParseUint(text, 0, 64)
+	if err != nil {
+		panic(err)
+	}
+
+	return val
 }
 
 type ElementsTemplate []*ElementTemplate
