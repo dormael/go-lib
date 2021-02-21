@@ -23,7 +23,8 @@ type Credential struct {
 	EnvID       string
 	EnvPassword string
 
-	CaptchaHandler func(pt *PageTemplate) error
+	CaptchaHandler   func(pt *PageTemplate) error
+	LoginLinkHandler func(pt *PageTemplate) error
 }
 
 type BrowserTemplate struct {
@@ -60,6 +61,10 @@ func (b *BrowserTemplate) Login(c Credential) (*PageTemplate, error) {
 
 	if c.LoginURL != "" {
 		if err := pt.Navigate(c.LoginURL); err != nil {
+			return nil, err
+		}
+	} else if c.LoginLinkHandler != nil {
+		if err := c.LoginLinkHandler(pt); err != nil {
 			return nil, err
 		}
 	} else {
