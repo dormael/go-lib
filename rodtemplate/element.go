@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-rod/rod"
 )
@@ -69,6 +70,17 @@ func (e ElementTemplate) MustTextAsUInt64() uint64 {
 	}
 
 	return val
+}
+
+func (e ElementTemplate) WaitUntilHas(selector string) bool {
+	for i := 0; i < 1000; i++ {
+		if true == e.Has(selector) {
+			return true
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
+
+	return false
 }
 
 type ElementsTemplate []*ElementTemplate

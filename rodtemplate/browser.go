@@ -25,6 +25,8 @@ type Credential struct {
 
 	CaptchaHandler   func(pt *PageTemplate) error
 	LoginLinkHandler func(pt *PageTemplate) error
+
+	LoginPostSubmitHandler func(pt *PageTemplate) error
 }
 
 type BrowserTemplate struct {

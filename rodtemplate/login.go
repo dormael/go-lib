@@ -98,13 +98,18 @@ func (l *Login) Submit() error {
 		pt.WaitLoadAndIdle()
 	}
 
+	if c.LoginPostSubmitHandler != nil {
+		errPostSubmit := c.LoginPostSubmitHandler(pt)
+		if errPostSubmit != nil {
+			return errPostSubmit
+		}
+	}
+
 	for i := 0; i < 100; i++ {
 		currentPageURL := pt.URL()
 		if loginPageURL == currentPageURL {
-			fmt.Println("wait until login finished", "loginPageURL", loginPageURL, "currentPageURL", currentPageURL)
 			pt.WaitLoadAndIdle()
-		} else if pt.El(c.LoginSuccessSelector).MustText() != "" {
-			fmt.Println("login success", "LoginSuccessSelector", c.LoginSuccessSelector, "LoginSuccessText", pt.El(c.LoginSuccessSelector).MustText())
+		} else if pt.Has(c.LoginSuccessSelector) && pt.El(c.LoginSuccessSelector).MustText() != "" {
 			break
 		}
 		time.Sleep(time.Millisecond * 100)
