@@ -9,24 +9,25 @@ import (
 
 type Credential struct {
 	LoginGateURL          string
+	LoginAfterURL         string
 	LoginLinkSelector     string
 	LoginInputSelector    string
 	PasswordInputSelector string
-	LoginURL              string
 
-	LoginSuccessClickSelector string
+	LoginURL string
 
 	LoginSuccessSelector string
-	ID                   string
 
-	Password    string
-	EnvID       string
+	ID       string
+	Password string
+	EnvID    string
+
 	EnvPassword string
 
-	CaptchaHandler   func(pt *PageTemplate) error
-	LoginLinkHandler func(pt *PageTemplate) error
-
+	CaptchaHandler         func(pt *PageTemplate) error
+	LoginLinkHandler       func(pt *PageTemplate) error
 	LoginPostSubmitHandler func(pt *PageTemplate) error
+	LoginSuccessCheckHandler func(pt *PageTemplate) (bool, error)
 }
 
 type BrowserTemplate struct {

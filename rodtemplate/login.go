@@ -84,25 +84,38 @@ func (l *Login) Submit() error {
 
 	pt.WaitLoadAndIdle()
 
-	if c.LoginSuccessClickSelector != "" {
-		for i := 0; i < 100; i++ {
-			if false == pt.Has(c.LoginSuccessClickSelector) {
-				time.Sleep(time.Millisecond * 100)
-				continue
-			}
-
-			pt.El(c.LoginSuccessClickSelector).MustClick()
-			break
-		}
-
-		pt.WaitLoadAndIdle()
-	}
+	//if c.LoginSuccessClickSelector != "" {
+	//	for i := 0; i < 100; i++ {
+	//		if false == pt.Has(c.LoginSuccessClickSelector) {
+	//			time.Sleep(time.Millisecond * 100)
+	//			continue
+	//		}
+	//
+	//		pt.El(c.LoginSuccessClickSelector).MustClick()
+	//		break
+	//	}
+	//
+	//	pt.WaitLoadAndIdle()
+	//}
 
 	if c.LoginPostSubmitHandler != nil {
 		errPostSubmit := c.LoginPostSubmitHandler(pt)
 		if errPostSubmit != nil {
 			return errPostSubmit
 		}
+	}
+
+	if c.LoginSuccessCheckHandler != nil {
+		success, errSuccessCheck := c.LoginSuccessCheckHandler(pt)
+		if errSuccessCheck != nil {
+			return errSuccessCheck
+		}
+
+		if false == success {
+			return fmt.Errorf("login failed for LoginSuccessCheckHandler returned success failed")
+		}
+
+		return nil
 	}
 
 	for i := 0; i < 100; i++ {
@@ -138,6 +151,14 @@ func (l *Login) Submit() error {
 			pt.ScreenShot(pt.El("html"), path.Join(screenshotPath, screenshotFile), 0)
 		}
 		return errors.New("failed to login")
+	}
+
+	if c.LoginAfterURL != "" {
+		if err := pt.Navigate(c.LoginAfterURL); err != nil {
+			return err
+		}
+
+		pt.WaitLoadAndIdle()
 	}
 
 	return nil
