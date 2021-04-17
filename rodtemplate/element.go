@@ -64,7 +64,23 @@ func (e ElementTemplate) SelectOrPanic(selector string) *ElementTemplate {
 func (e ElementTemplate) MustTextAsUInt64() uint64 {
 	text := strings.TrimSpace(e.MustText())
 	text = strings.ReplaceAll(text, ",", "")
+
 	val, err := strconv.ParseUint(text, 0, 64)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return val
+}
+
+func (e ElementTemplate) MustAttributeAsInt(attr string) int {
+	attribute := e.MustAttribute(attr)
+	if attribute == nil {
+		panic(fmt.Errorf("attribute %s is not found in %s", attr, e.MustHTML()))
+	}
+
+	val, err := strconv.Atoi(strings.TrimSpace(*attribute))
 	if err != nil {
 		panic(err)
 	}

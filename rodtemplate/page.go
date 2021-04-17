@@ -2,6 +2,7 @@ package rodtemplate
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
@@ -131,6 +132,17 @@ func (p *PageTemplate) Has(selector string) bool {
 	return has
 }
 
+func (p PageTemplate) GetVisibleHeight(selector string) float64 {
+	if p.Has(selector) {
+		el := p.El(selector)
+		if el.MustVisible() {
+			return el.Height()
+		}
+	}
+
+	return 0.0
+}
+
 func (p *PageTemplate) El(selector string) *ElementTemplate {
 	return &ElementTemplate{Element: p.P.MustElement(selector)}
 }
@@ -169,6 +181,22 @@ func (p *PageTemplate) WaitRepaint() {
 
 func (p *PageTemplate) ScrollTop() {
 	p.P.Keyboard.MustPress(input.Home)
+}
+
+func (p *PageTemplate) ScrollBottom() {
+	p.P.Keyboard.MustPress(input.End)
+}
+
+func (p *PageTemplate) ScrollBottomHuman() {
+	metrics, err := proto.PageGetLayoutMetrics{}.Call(p.P)
+	if err != nil {
+		panic(err)
+	}
+
+	width := int(metrics.ContentSize.Width)
+	height := int(metrics.ContentSize.Height)
+
+	p.P.Mouse.Scroll(float64(width), float64(height), height/128)
 }
 
 func (p *PageTemplate) ScrollTo(e *ElementTemplate) {
@@ -282,6 +310,14 @@ func (p *PageTemplate) ScreenShotWithOption(el *ElementTemplate, dumpPath string
 	}
 
 	return byteArr
+}
+
+func (p *PageTemplate) SelectOrPanic(selector string) *ElementTemplate {
+	if false == p.Has(selector) {
+		panic(fmt.Errorf("%s block is missng", selector))
+	}
+
+	return p.El(selector)
 }
 
 //NewPageTemplate
