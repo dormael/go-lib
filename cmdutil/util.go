@@ -50,6 +50,12 @@ func PromptYN(prompt string) string {
 	return strings.TrimSpace(result)
 }
 
+func ResetCredential(credLabel string, credURL string) {
+	if err := credential.Del(credLabel, credURL); err != nil {
+		panic(err)
+	}
+}
+
 func GetCredential(credLabel string, credURL string) (string, string) {
 	id, pass, err := credential.Get(credLabel, credURL)
 	if err != nil && false == credentials.IsErrCredentialsNotFound(err) {
