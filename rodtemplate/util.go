@@ -12,7 +12,7 @@ type TimeoutError struct {
 	Message string
 }
 
-func WaitFor(timeout, retryDuration time.Duration, checkFunc func() bool, retryFunc func()) error {
+func WaitFor(targetName string, timeout, retryDuration time.Duration, checkFunc func() bool, retryFunc func()) error {
 	started := time.Now()
 	lastRetry := time.Now()
 
@@ -29,10 +29,10 @@ func WaitFor(timeout, retryDuration time.Duration, checkFunc func() bool, retryF
 		retryFunc()
 		lastRetry = time.Now()
 
-		log.Println("retry after sleep", sleepDuration, "for retryDuration", retryDuration)
+		log.Println("retry after sleep", sleepDuration, "for retryDuration", retryDuration, "waiting for", targetName)
 	}
 
-	message := fmt.Sprintf("timeout %s exceeded after %s", timeout, started)
+	message := fmt.Sprintf("timeout %s exceeded after %s waiting for %s", timeout, started, targetName)
 	log.Println(message)
 
 	return &TimeoutError{Timout: timeout, Started: started, Message: message}
