@@ -3,13 +3,24 @@ package rodtemplate
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"time"
+
+	"github.com/go-rod/rod"
 )
 
 type TimeoutError struct {
 	Timout  time.Duration
 	Started time.Time
 	Message string
+}
+
+func (e TimeoutError) Error() string {
+	return e.Message
+}
+
+func (e TimeoutError) Timeout() bool {
+	return true
 }
 
 func WaitFor(targetName string, timeout, retryDuration time.Duration, checkFunc func() bool, retryFunc func()) error {
@@ -38,10 +49,14 @@ func WaitFor(targetName string, timeout, retryDuration time.Duration, checkFunc 
 	return &TimeoutError{Timout: timeout, Started: started, Message: message}
 }
 
-func (e TimeoutError) Error() string {
-	return e.Message
+var errNotFound = &rod.ErrObjectNotFound{}
+
+func IsObjectNotFoundError(err error) bool {
+	return reflect.TypeOf(errNotFound) == reflect.TypeOf(err)
 }
 
-func (e TimeoutError) Timeout() bool {
-	return true
+var errCovered = &rod.ErrCovered{}
+
+func IsCoveredError(err error) bool {
+	return reflect.TypeOf(errCovered) == reflect.TypeOf(err)
 }

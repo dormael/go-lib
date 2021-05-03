@@ -7,7 +7,7 @@ import (
 	"github.com/go-rod/rod/lib/cdp"
 )
 
-type Credential struct {
+type LoginHandler struct {
 	LoginGateURL          string
 	LoginAfterURL         string
 	LoginLinkSelector     string
@@ -34,10 +34,10 @@ type BrowserTemplate struct {
 	*rod.Browser
 }
 
-func (b *BrowserTemplate) Login(c Credential) (*PageTemplate, error) {
+func (b *BrowserTemplate) Login(h LoginHandler) (*PageTemplate, error) {
 	var pt *PageTemplate
 
-	page := b.MustPage(c.LoginGateURL)
+	page := b.MustPage(h.LoginGateURL)
 	if err := page.WaitLoad(); err != nil {
 		if false == cdp.ErrCtxDestroyed.Is(err) {
 			panic(err)
@@ -62,26 +62,26 @@ func (b *BrowserTemplate) Login(c Credential) (*PageTemplate, error) {
 
 	pt.WaitLoad()
 
-	if c.LoginURL != "" {
-		if err := pt.Navigate(c.LoginURL); err != nil {
+	if h.LoginURL != "" {
+		if err := pt.Navigate(h.LoginURL); err != nil {
 			return nil, err
 		}
-	} else if c.LoginLinkHandler != nil {
-		if err := c.LoginLinkHandler(pt); err != nil {
+	} else if h.LoginLinkHandler != nil {
+		if err := h.LoginLinkHandler(pt); err != nil {
 			return nil, err
 		}
 	} else {
 		pt.WaitLoadAndIdle()
-		pt.ClickWhenAvailable(c.LoginLinkSelector)
+		pt.ClickWhenAvailable(h.LoginLinkSelector)
 	}
 
-	login := &Login{PageTemplate: pt, Credential: c}
+	login := &Login{PageTemplate: pt, Handler: h}
 
 	if err := login.Validate(); err != nil {
 		return nil, err
 	}
 
-	if err := login.Submit(); err != nil {
+	if err := login.Submit(b.Browser); err != nil {
 		return nil, err
 	}
 

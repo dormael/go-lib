@@ -6,107 +6,130 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 
+	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
 )
 
 type Login struct {
 	*PageTemplate
-	Credential Credential
+	Handler LoginHandler
 }
 
 func (l *Login) Validate() error {
-	if l.Credential.ID == "" {
-		l.Credential.ID = os.Getenv(l.Credential.EnvID)
+	if l.Handler.ID == "" {
+		l.Handler.ID = os.Getenv(l.Handler.EnvID)
 	}
 
-	if l.Credential.Password == "" {
-		l.Credential.Password = os.Getenv(l.Credential.EnvPassword)
+	if l.Handler.Password == "" {
+		l.Handler.Password = os.Getenv(l.Handler.EnvPassword)
 	}
 
-	if l.Credential.ID == "" || l.Credential.Password == "" {
-		return fmt.Errorf("id, password is required as parameter or os environment variables with names(%s, %s)", l.Credential.EnvID, l.Credential.EnvPassword)
+	if l.Handler.ID == "" || l.Handler.Password == "" {
+		return fmt.Errorf("id, password is required as parameter or os environment variables with names(%s, %s)", l.Handler.EnvID, l.Handler.EnvPassword)
 	}
 
 	return nil
 }
 
-func (l *Login) Submit() error {
-	c := l.Credential
+func (l *Login) Submit(b *rod.Browser) error {
+	h := l.Handler
 	pt := l.PageTemplate
 
-	pt.WaitLoad()
-	loginPageURL := pt.URL()
-
-	pt.WaitLoad()
+	pt.WaitLoadAndIdle()
 
 	var loginPt *PageTemplate
 
-	for i := 0; i < 100; i++ {
-		if true == pt.Has(c.LoginInputSelector) {
-			loginPt = pt
-		} else if true == pt.Has("iframe") {
-			for _, e := range pt.Els("iframe") {
-				iPage, err := e.Frame()
-				if err != nil {
-					continue
-				}
+	//find login input selector in iframes
+	if true == pt.Has("iframe") {
+		for _, e := range pt.Els("iframe") {
+			iFrame, err := e.Frame()
+			if err != nil {
+				continue
+			}
 
-				loginPt = &PageTemplate{P: iPage}
-				if true == loginPt.Has(c.LoginInputSelector) {
-					break
+			_, err = iFrame.Element("body")
+			if err != nil {
+				errMessage := err.Error()
+				if strings.Contains(errMessage, "Frame with the given id was not found.") {
+					continue
+				} else {
+					return err
 				}
 			}
-		}
 
-		if loginPt != nil {
-			break
-		}
+			myPt := &PageTemplate{P: iFrame}
+			myPt.WaitLoadAndIdle()
 
-		time.Sleep(time.Millisecond * 100)
+			if true == myPt.Has(h.LoginInputSelector) {
+				loginPt = myPt
+				break
+			}
+		}
+	}
+
+	//find login input selector in another windows
+	if loginPt == nil {
+		for _, p := range b.MustPages() {
+			if p.FrameID == pt.FrameID() {
+				continue
+			}
+
+			myPt := &PageTemplate{P: p}
+			myPt.WaitLoadAndIdle()
+
+			if true == myPt.Has(h.LoginInputSelector) {
+				loginPt = myPt
+				break
+			}
+		}
+	}
+
+	//find login input selector in page
+	if loginPt == nil {
+		for i := 0; i < 100; i++ {
+			if true == pt.Has(h.LoginInputSelector) {
+				loginPt = pt
+				break
+			}
+
+			time.Sleep(time.Millisecond * 100)
+		}
 	}
 
 	if loginPt == nil {
-		return errors.New("failed to find login input selector " + c.LoginInputSelector)
+		return errors.New("failed to find login input selector " + h.LoginInputSelector)
 	}
 
-	if c.CaptchaHandler != nil {
-		errCaptcha := c.CaptchaHandler(loginPt)
+	loginPageURL := pt.URL()
+	if pt != loginPt {
+		loginPageURL = loginPt.URL()
+	}
+
+	if h.CaptchaHandler != nil {
+		errCaptcha := h.CaptchaHandler(loginPt)
 		if errCaptcha != nil {
 			return errCaptcha
 		}
 	}
 
-	loginPt.Input(c.LoginInputSelector, c.ID)
-	loginPt.Input(c.PasswordInputSelector, c.Password)
+	loginPt.Input(h.LoginInputSelector, h.ID)
+	loginPt.Input(h.PasswordInputSelector, h.Password)
 	loginPt.PressKey(input.Enter)
 
 	pt.WaitLoadAndIdle()
 
-	//if c.LoginSuccessClickSelector != "" {
-	//	for i := 0; i < 100; i++ {
-	//		if false == pt.Has(c.LoginSuccessClickSelector) {
-	//			time.Sleep(time.Millisecond * 100)
-	//			continue
-	//		}
-	//
-	//		pt.El(c.LoginSuccessClickSelector).MustClick()
-	//		break
-	//	}
-	//
-	//	pt.WaitLoadAndIdle()
-	//}
-
-	if c.LoginPostSubmitHandler != nil {
-		errPostSubmit := c.LoginPostSubmitHandler(pt)
+	if h.LoginPostSubmitHandler != nil {
+		errPostSubmit := h.LoginPostSubmitHandler(pt)
 		if errPostSubmit != nil {
 			return errPostSubmit
 		}
 	}
 
-	if c.LoginSuccessCheckHandler != nil {
-		success, errSuccessCheck := c.LoginSuccessCheckHandler(pt)
+	if h.LoginSuccessCheckHandler != nil {
+		success, errSuccessCheck := h.LoginSuccessCheckHandler(pt)
 		if errSuccessCheck != nil {
 			return errSuccessCheck
 		}
@@ -118,17 +141,35 @@ func (l *Login) Submit() error {
 		return nil
 	}
 
+	pt.P.MustWaitNavigation()
+
 	for i := 0; i < 100; i++ {
-		currentPageURL := pt.URL()
-		if loginPageURL == currentPageURL {
-			pt.WaitLoadAndIdle()
-		} else if pt.Has(c.LoginSuccessSelector) && pt.El(c.LoginSuccessSelector).MustText() != "" {
+		if err := pt.P.WaitLoad(); err != nil {
+			continue
+		}
+
+		if err := pt.P.WaitIdle(time.Millisecond * 100); err != nil {
+			continue
+		}
+
+		if false == pt.Has(h.LoginSuccessSelector) {
+			time.Sleep(time.Millisecond * 100)
+			continue
+		}
+
+		if str, err := pt.El(h.LoginSuccessSelector).Text(); err != nil {
+			if IsObjectNotFoundError(err) {
+				continue
+			} else {
+				return err
+			}
+		} else if str != "" {
 			break
 		}
+
 		time.Sleep(time.Millisecond * 100)
 	}
 
-	pt.WaitLoadAndIdle()
 	currentPageURL := pt.URL()
 
 	if loginPageURL == currentPageURL {
@@ -153,8 +194,8 @@ func (l *Login) Submit() error {
 		return errors.New("failed to login")
 	}
 
-	if c.LoginAfterURL != "" {
-		if err := pt.Navigate(c.LoginAfterURL); err != nil {
+	if h.LoginAfterURL != "" {
+		if err := pt.Navigate(h.LoginAfterURL); err != nil {
 			return err
 		}
 
@@ -163,3 +204,4 @@ func (l *Login) Submit() error {
 
 	return nil
 }
+
